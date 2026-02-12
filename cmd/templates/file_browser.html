@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.Title}}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/shared.css">
+    <link rel="stylesheet" href="/assets/file_browser.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Certificate File Browser</h1>
+                <p>Browse, search, and download generated certificate assets.</p>
+            </div>
+            <div class="header-actions">
+                <a class="btn" href="/">Back to Dashboard</a>
+                <a class="btn primary" href="{{.RootPath}}">Root Folder</a>
+            </div>
+        </div>
+        <div class="content">
+            <div class="breadcrumb">
+                <a href="{{.RootPath}}">Root</a>
+                {{if .CurrentPath}}
+                    / {{.CurrentPath}}
+                {{end}}
+            </div>
+
+            <div class="summary-grid">
+                <div class="card">
+                    <div class="card-title">Total Items</div>
+                    <div class="card-value">{{.Summary.Total}}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Directories</div>
+                    <div class="card-value">{{.Summary.Directories}}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Certificates</div>
+                    <div class="card-value">{{.Summary.Certificates}}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Keys</div>
+                    <div class="card-value">{{.Summary.Keys}}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">PFX Bundles</div>
+                    <div class="card-value">{{.Summary.Bundles}}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Total Size</div>
+                    <div class="card-value">{{formatSize .Summary.TotalSize}}</div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="search">
+                    <label class="visually-hidden" for="fileSearch">Search files and folders</label>
+                    <input id="fileSearch" type="search" placeholder="Search files and folders">
+                </div>
+                <div class="file-meta">Showing {{.Summary.Total}} items</div>
+            </div>
+
+            <div class="file-list">
+                {{if .ParentPath}}
+                <div class="file-item is-parent" data-name="parent" data-parent="true" data-url="{{.ParentPath}}">
+                    <div class="file-icon">⬅️</div>
+                    <div class="file-details">
+                        <a href="{{.ParentPath}}" class="file-name">.. (Parent Directory)</a>
+                        <div class="file-meta">Back one level</div>
+                    </div>
+                    <div class="file-tags">
+                        <span class="badge dir">Directory</span>
+                    </div>
+                    <div class="file-size"></div>
+                    <button class="action-trigger" type="button" aria-label="Show actions">⋯</button>
+                </div>
+                {{end}}
+
+                {{if .Files}}
+                    {{range .Files}}
+                    <div class="file-item" data-name="{{.Name}} {{.Path}}" data-url="{{.Path}}" data-folder-url="{{.FolderPath}}" data-download-url="{{if not .IsDir}}{{.Path}}{{end}}" data-system-path="{{urlquery .SystemPath}}" data-system-folder="{{urlquery .SystemFolderPath}}" data-is-dir="{{.IsDir}}">
+                        <div class="file-icon">
+                            {{if .IsDir}}📁{{else if eq (fileExt .Name) ".pem"}}📜{{else if eq (fileExt .Name) ".key"}}🔑{{else if eq (fileExt .Name) ".pfx"}}📦{{else}}📄{{end}}
+                        </div>
+                        <div class="file-details">
+                            <a href="{{.Path}}" class="file-name">{{.Name}}</a>
+                            <div class="file-meta">Modified: {{.ModTime.Format "2006-01-02 15:04:05"}}</div>
+                        </div>
+                        <div class="file-tags">
+                            {{if .IsDir}}
+                                <span class="badge dir">Directory</span>
+                            {{else if eq (fileExt .Name) ".pem"}}
+                                <span class="badge cert">Certificate</span>
+                            {{else if eq (fileExt .Name) ".key"}}
+                                <span class="badge key">Private Key</span>
+                            {{else if eq (fileExt .Name) ".pfx"}}
+                                <span class="badge bundle">PFX Bundle</span>
+                            {{else}}
+                                <span class="badge">File</span>
+                            {{end}}
+                        </div>
+                        <div class="file-size">
+                            {{if not .IsDir}}{{formatSize .Size}}{{end}}
+                        </div>
+                        <button class="action-trigger" type="button" aria-label="Show actions">⋯</button>
+                    </div>
+                    {{end}}
+                {{else}}
+                    <div class="empty-state" id="emptyState">No files found in this directory.</div>
+                {{end}}
+            </div>
+            <div class="context-menu" id="contextMenu" role="menu" aria-hidden="true">
+                <button class="context-item" type="button" id="menu-open" role="menuitem">Open</button>
+                <button class="context-item" type="button" id="menu-download" role="menuitem">Download</button>
+                <button class="context-item" type="button" id="menu-open-folder" role="menuitem">Open containing folder (browser)</button>
+                <button class="context-item" type="button" id="menu-open-location" role="menuitem">Open in file manager</button>
+                <button class="context-item" type="button" id="menu-copy" role="menuitem">Copy path</button>
+            </div>
+            <div class="empty-state" id="searchEmpty" style="display:none;">No files match your search.</div>
+        </div>
+    </div>
+    <script src="/assets/shared.js"></script>
+    <script src="/assets/file_browser.js"></script>
+</body>
+</html>

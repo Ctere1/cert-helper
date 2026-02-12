@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.Title}}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/shared.css">
+    <link rel="stylesheet" href="/assets/dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Certificate Helper</h1>
+                <p>Create, track, and export certificates.</p>
+            </div>
+        </div>
+        <div class="content">
+        {{if .Message}}
+            <div class="notice success">{{.Message}}</div>
+        {{end}}
+        {{if .Error}}
+            <div class="notice error">{{.Error}}</div>
+        {{end}}
+
+        <div class="toolbar">
+            <nav class="nav nav-tabs">
+                <button class="nav-item active" type="button" data-section="overview">Overview</button>
+                <button class="nav-item" type="button" data-section="operations">Certificate Operations</button>
+                <button class="nav-item" type="button" data-section="files">File Center</button>
+                <button class="nav-item" type="button" data-section="scep">SCEP Server</button>
+            </nav>
+        </div>
+
+        <section class="panel-section active" data-section="overview">
+            <div class="section">
+                <h2>Certificate Health Overview</h2>
+                <div class="summary-grid">
+                    <div class="card">
+                        <div class="card-title">Total Certificates</div>
+                        <div class="card-value">{{.Summary.Total}}</div>
+                        <div class="card-subtext">Across root, intermediate, and issued certs</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Valid</div>
+                        <div class="card-value">{{.Summary.Valid}}</div>
+                        <div class="card-subtext">Healthy certificates</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Expiring Soon</div>
+                        <div class="card-value">{{.Summary.Expiring}}</div>
+                        <div class="card-subtext">{{.Summary.ExpiringDaysHint}}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Expired</div>
+                        <div class="card-value">{{.Summary.Expired}}</div>
+                        <div class="card-subtext">Immediate renewal required</div>
+                    </div>
+                </div>
+                <div class="status-bar">
+                    <div class="status-segment status-valid" style="width: {{.Summary.ValidPercent}}%"></div>
+                    <div class="status-segment status-expiring" style="width: {{.Summary.ExpiringPercent}}%"></div>
+                    <div class="status-segment status-expired" style="width: {{.Summary.ExpiredPercent}}%"></div>
+                </div>
+                <div class="status-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot status-valid"></span>
+                        Valid ({{.Summary.Valid}})
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot status-expiring"></span>
+                        Expiring soon ({{.Summary.Expiring}})
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot status-expired"></span>
+                        Expired ({{.Summary.Expired}})
+                    </div>
+                    {{if .Summary.NextExpiryName}}
+                    <div class="legend-item">
+                        Next renewal: {{.Summary.NextExpiryName}} ({{.Summary.NextExpiryDate}})
+                    </div>
+                    {{end}}
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Issuer</th>
+                                <th>Status</th>
+                                <th>Valid Until</th>
+                                <th>Days Left</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{if .Certificates}}
+                                {{range .Certificates}}
+                                <tr class="certificate-row" data-download-url="{{.Path}}" data-folder-url="{{.FolderPath}}" data-system-path="{{urlquery .SystemPath}}" data-system-folder="{{urlquery .SystemFolderPath}}">
+                                    <td>{{.Name}}</td>
+                                    <td>{{.Type}}</td>
+                                    <td>{{.Issuer}}</td>
+                                    <td><span class="badge {{.StatusClass}}">{{.Status}}</span></td>
+                                    <td>{{.NotAfter.Format "2006-01-02"}}</td>
+                                    <td>{{.DaysLeft}}</td>
+                                    <td class="table-actions">
+                                        <button class="action-trigger" type="button" aria-label="Show actions">⋯</button>
+                                    </td>
+                                </tr>
+                                {{end}}
+                            {{else}}
+                                <tr>
+                                    <td colspan="7">No certificates found yet.</td>
+                                </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="context-menu" id="certContextMenu" role="menu" aria-hidden="true">
+                    <button class="context-item" type="button" id="cert-menu-download" role="menuitem">Download</button>
+                    <button class="context-item" type="button" id="cert-menu-open-folder" role="menuitem">Open containing folder (browser)</button>
+                    <button class="context-item" type="button" id="cert-menu-open-location" role="menuitem">Open in file manager</button>
+                    <button class="context-item" type="button" id="cert-menu-copy" role="menuitem">Copy path</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-section" data-section="operations">
+            <div class="section">
+                <h2>Create Root CA</h2>
+                <form method="post" action="/generate/root">
+                    <div class="form-actions">
+                        <button class="secondary" type="button" data-fill="root">Fill defaults</button>
+                    </div>
+                    <div class="grid">
+                        <div class="field">
+                            <label for="root-name">CA Name</label>
+                            <input id="root-name" name="name" placeholder="default" aria-describedby="root-name-hint">
+                            <span class="field-hint" id="root-name-hint">Leave blank to use the default name.</span>
+                        </div>
+                        <div class="field">
+                            <label for="root-common-name">Common Name (CN)</label>
+                            <input id="root-common-name" name="common_name" required>
+                        </div>
+                        <div class="field">
+                            <label for="root-organization">Organization (O)</label>
+                            <input id="root-organization" name="organization">
+                        </div>
+                        <div class="field">
+                            <label for="root-organizational-unit">Organizational Unit (OU)</label>
+                            <input id="root-organizational-unit" name="organizational_unit">
+                        </div>
+                        <div class="field">
+                            <label for="root-country">Country (C)</label>
+                            <input id="root-country" name="country">
+                        </div>
+                        <div class="field">
+                            <label for="root-state">State/Province (ST)</label>
+                            <input id="root-state" name="state">
+                        </div>
+                        <div class="field">
+                            <label for="root-locality">Locality (L)</label>
+                            <input id="root-locality" name="locality">
+                        </div>
+                        <div class="field">
+                            <label for="root-validity-days">Validity (days)</label>
+                            <input id="root-validity-days" name="validity_days" value="3600">
+                        </div>
+                        <div class="field">
+                            <label for="root-key-bits">Private Key Bits</label>
+                            <input id="root-key-bits" name="key_bits" type="number" min="2048" step="1024" value="2048">
+                            <span class="field-hint">Supported: 2048, 3072, 4096.</span>
+                        </div>
+                        <div class="field">
+                            <label>Key Usage</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="digital_signature" checked>
+                                    Digital Signature
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="cert_sign" checked>
+                                    Certificate Sign
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="crl_sign" checked>
+                                    CRL Sign
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button type="submit">Create Root CA</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2>Create Intermediate CA</h2>
+                <form method="post" action="/generate/intermediate">
+                    <div class="form-actions">
+                        <button class="secondary" type="button" data-fill="intermediate">Fill defaults</button>
+                    </div>
+                    <div class="grid">
+                        <div class="field">
+                            <label for="intermediate-root">Root CA</label>
+                            <select id="intermediate-root" name="root_name" required>
+                                <option value="">Select</option>
+                                {{range .RootCAs}}
+                                    <option value="{{.}}">{{.}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-name">Intermediate CA Name</label>
+                            <input id="intermediate-name" name="name">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-common-name">Common Name (CN)</label>
+                            <input id="intermediate-common-name" name="common_name" required>
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-organization">Organization (O)</label>
+                            <input id="intermediate-organization" name="organization">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-organizational-unit">Organizational Unit (OU)</label>
+                            <input id="intermediate-organizational-unit" name="organizational_unit">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-country">Country (C)</label>
+                            <input id="intermediate-country" name="country">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-state">State/Province (ST)</label>
+                            <input id="intermediate-state" name="state">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-locality">Locality (L)</label>
+                            <input id="intermediate-locality" name="locality">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-validity-days">Validity (days)</label>
+                            <input id="intermediate-validity-days" name="validity_days" value="1800">
+                        </div>
+                        <div class="field">
+                            <label for="intermediate-key-bits">Private Key Bits</label>
+                            <input id="intermediate-key-bits" name="key_bits" type="number" min="2048" step="1024" value="2048">
+                            <span class="field-hint">Supported: 2048, 3072, 4096.</span>
+                        </div>
+                        <div class="field">
+                            <label>Key Usage</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="digital_signature" checked>
+                                    Digital Signature
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="cert_sign" checked>
+                                    Certificate Sign
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="crl_sign" checked>
+                                    CRL Sign
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button type="submit">Create Intermediate CA</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2>Create Certificate</h2>
+                <form method="post" action="/generate/cert">
+                    <div class="form-actions">
+                        <button class="secondary" type="button" data-fill="certificate">Fill defaults</button>
+                    </div>
+                    <div class="grid">
+                        <div class="field">
+                            <label for="cert-issuer">Signing CA</label>
+                            <select id="cert-issuer" name="issuer" required>
+                                <option value="">Select</option>
+                                {{range .IssuerOptions}}
+                                    <option value="{{.Value}}">{{.Label}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="cert-common-name">Common Name (CN)</label>
+                            <input id="cert-common-name" name="common_name" required>
+                        </div>
+                        <div class="field">
+                            <label for="cert-organization">Organization (O)</label>
+                            <input id="cert-organization" name="organization">
+                        </div>
+                        <div class="field">
+                            <label for="cert-organizational-unit">Organizational Unit (OU)</label>
+                            <input id="cert-organizational-unit" name="organizational_unit">
+                        </div>
+                        <div class="field">
+                            <label for="cert-country">Country (C)</label>
+                            <input id="cert-country" name="country">
+                        </div>
+                        <div class="field">
+                            <label for="cert-state">State/Province (ST)</label>
+                            <input id="cert-state" name="state">
+                        </div>
+                        <div class="field">
+                            <label for="cert-locality">Locality (L)</label>
+                            <input id="cert-locality" name="locality">
+                        </div>
+                        <div class="field">
+                            <label for="cert-sans">Subject Alt Names (comma separated)</label>
+                            <input id="cert-sans" name="subject_alt_names">
+                        </div>
+                        <div class="field">
+                            <label for="cert-pfx-password">PFX Password</label>
+                            <input id="cert-pfx-password" name="pfx_password" type="password">
+                        </div>
+                        <div class="field">
+                            <label for="cert-validity-days">Validity (days)</label>
+                            <input id="cert-validity-days" name="validity_days" value="365">
+                        </div>
+                        <div class="field">
+                            <label for="cert-key-type">Key Type</label>
+                            <select id="cert-key-type" name="key_type" aria-describedby="cert-key-type-hint">
+                                <option value="rsa" selected>RSA</option>
+                                <option value="ecdsa_p256">ECDSA (P-256)</option>
+                            </select>
+                            <span class="field-hint" id="cert-key-type-hint">ECDSA uses the P-256 curve (256-bit). The key bits field applies to RSA only and is ignored for ECDSA.</span>
+                        </div>
+                        <div class="field">
+                            <label for="cert-key-bits">Private Key Bits</label>
+                            <input id="cert-key-bits" name="key_bits" type="number" min="2048" step="1024" value="2048">
+                            <span class="field-hint">Supported: 2048, 3072, 4096.</span>
+                        </div>
+                        <div class="field">
+                            <label>Key Usage</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="digital_signature">
+                                    Digital Signature
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="key_encipherment">
+                                    Key Encipherment
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="data_encipherment">
+                                    Data Encipherment
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="key_usage" value="key_agreement">
+                                    Key Agreement
+                                </label>
+                            </div>
+                            <span class="field-hint">Leave unchecked to keep the default usage.</span>
+                        </div>
+                        <div class="field">
+                            <label>Extended Key Usage (EKU)</label>
+                            <div class="checkbox-group" aria-describedby="cert-eku-hint">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="extended_key_usage" value="server_auth">
+                                    Server Authentication
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="extended_key_usage" value="client_auth">
+                                    Client Authentication
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="extended_key_usage" value="code_signing">
+                                    Code Signing
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="extended_key_usage" value="email_protection">
+                                    Email Protection
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="extended_key_usage" value="time_stamping">
+                                    Time Stamping
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="extended_key_usage" value="ocsp_signing">
+                                    OCSP Signing
+                                </label>
+                            </div>
+                            <span class="field-hint" id="cert-eku-hint">Defaults to server + client authentication when no EKU options are selected.</span>
+                        </div>
+                        <div class="field">
+                            <label class="checkbox">
+                                <input type="checkbox" name="export_private_key" aria-describedby="export-private-key-hint" checked>
+                                Export private key and PFX bundle
+                            </label>
+                            <span class="field-hint" id="export-private-key-hint">Turn off to avoid writing the private key to disk.</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button type="submit">Create Certificate</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="panel-section" data-section="files">
+            <div class="section">
+                <h2>File Center</h2>
+                <div class="file-center">
+                    <div class="file-center-card">
+                        <h3>Output Directory</h3>
+                        <div class="file-center-path">{{.OutputDir}}</div>
+                        <div class="file-center-actions">
+                            <button class="action-button" type="button" data-copy="{{urlquery .OutputDir}}">Copy output path</button>
+                            <button class="action-button" type="button" data-open="{{urlquery .OutputDir}}">Open in file manager</button>
+                        </div>
+                    </div>
+                    <div class="file-center-card">
+                        <h3>Stored Assets</h3>
+                        <div class="file-meta">Directories: {{.FileSummary.Directories}}</div>
+                        <div class="file-meta">Certificates: {{.FileSummary.Certificates}}</div>
+                        <div class="file-meta">Private Keys: {{.FileSummary.Keys}}</div>
+                        <div class="file-meta">PFX Bundles: {{.FileSummary.Bundles}}</div>
+                        <div class="file-meta">Total Size: {{formatSize .FileSummary.TotalSize}}</div>
+                    </div>
+                </div>
+                <div class="file-browser">
+                    <nav class="breadcrumb" aria-label="File browser breadcrumb">
+                        <a href="{{.FileBrowser.RootPath}}">Root</a>
+                        {{if .FileBrowser.CurrentPath}}
+                            / {{.FileBrowser.CurrentPath}}
+                        {{end}}
+                    </nav>
+
+                    <div class="summary-grid">
+                        <div class="card">
+                            <div class="card-title">Total Items</div>
+                            <div class="card-value">{{.FileBrowser.Summary.Total}}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Directories</div>
+                            <div class="card-value">{{.FileBrowser.Summary.Directories}}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Certificates</div>
+                            <div class="card-value">{{.FileBrowser.Summary.Certificates}}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Keys</div>
+                            <div class="card-value">{{.FileBrowser.Summary.Keys}}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">PFX Bundles</div>
+                            <div class="card-value">{{.FileBrowser.Summary.Bundles}}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Total Size</div>
+                            <div class="card-value">{{formatSize .FileBrowser.Summary.TotalSize}}</div>
+                        </div>
+                    </div>
+
+                    <div class="file-browser-toolbar">
+                        <div class="file-browser-search">
+                            <label class="visually-hidden" for="fileSearch">Search files and folders</label>
+                            <input id="fileSearch" type="search" placeholder="Search files and folders">
+                        </div>
+                        <div class="file-meta">Showing {{.FileBrowser.Summary.Total}} items</div>
+                    </div>
+
+                    <div class="file-list">
+                        {{if .FileBrowser.ParentPath}}
+                        <div class="file-item is-parent" data-name="parent" data-parent="true" data-url="{{.FileBrowser.ParentPath}}">
+                            <div class="file-icon">⬅️</div>
+                            <div class="file-details">
+                                <a href="{{.FileBrowser.ParentPath}}" class="file-name">.. (Parent Directory)</a>
+                                <div class="file-meta">Back one level</div>
+                            </div>
+                            <div class="file-tags">
+                                <span class="badge dir">Directory</span>
+                            </div>
+                            <div class="file-size"></div>
+                            <button class="action-trigger" type="button" aria-label="Show actions">⋯</button>
+                        </div>
+                        {{end}}
+
+                        {{if .FileBrowser.Files}}
+                            {{range .FileBrowser.Files}}
+                            <div class="file-item"
+                                 data-name="{{.Name}} {{.Path}}"
+                                 data-url="{{if .IsDir}}{{.BrowserPath}}{{else}}{{.Path}}{{end}}"
+                                 data-folder-url="{{.BrowserFolderPath}}"
+                                 data-download-url="{{if not .IsDir}}{{.Path}}{{end}}"
+                                 data-system-path="{{urlquery .SystemPath}}"
+                                 data-system-folder="{{urlquery .SystemFolderPath}}"
+                                 data-is-dir="{{.IsDir}}">
+                                <div class="file-icon">
+                                    {{if .IsDir}}📁{{else if eq (fileExt .Name) ".pem"}}📜{{else if eq (fileExt .Name) ".key"}}🔑{{else if eq (fileExt .Name) ".pfx"}}📦{{else}}📄{{end}}
+                                </div>
+                                <div class="file-details">
+                                    <a href="{{if .IsDir}}{{.BrowserPath}}{{else}}{{.Path}}{{end}}" class="file-name">{{.Name}}</a>
+                                    <div class="file-meta">Modified: {{.ModTime.Format "2006-01-02 15:04:05"}}</div>
+                                </div>
+                                <div class="file-tags">
+                                    {{if .IsDir}}
+                                        <span class="badge dir">Directory</span>
+                                    {{else if eq (fileExt .Name) ".pem"}}
+                                        <span class="badge cert">Certificate</span>
+                                    {{else if eq (fileExt .Name) ".key"}}
+                                        <span class="badge key">Private Key</span>
+                                    {{else if eq (fileExt .Name) ".pfx"}}
+                                        <span class="badge bundle">PFX Bundle</span>
+                                    {{else}}
+                                        <span class="badge">File</span>
+                                    {{end}}
+                                </div>
+                                <div class="file-size">
+                                    {{if not .IsDir}}{{formatSize .Size}}{{end}}
+                                </div>
+                                <button class="action-trigger" type="button" aria-label="Show actions">⋯</button>
+                            </div>
+                            {{end}}
+                        {{else}}
+                            <div class="empty-state" id="emptyState">No files found in this directory.</div>
+                        {{end}}
+                    </div>
+                    <div class="context-menu" id="contextMenu" role="menu" aria-hidden="true">
+                        <button class="context-item" type="button" id="menu-open" role="menuitem">Open</button>
+                        <button class="context-item" type="button" id="menu-download" role="menuitem">Download</button>
+                        <button class="context-item" type="button" id="menu-open-folder" role="menuitem">Open containing folder (browser)</button>
+                        <button class="context-item" type="button" id="menu-open-location" role="menuitem">Open in file manager</button>
+                        <button class="context-item" type="button" id="menu-copy" role="menuitem">Copy path</button>
+                    </div>
+                    <div class="empty-state" id="searchEmpty" style="display:none;">No files match your search.</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-section" data-section="scep">
+            <div class="section">
+                <h2>SCEP Server</h2>
+                <div class="summary-grid">
+                    <div class="card">
+                        <div class="card-title">Service Status</div>
+                        <div class="card-value {{if .SCEPRunning}}status-running{{else}}status-stopped{{end}}">{{if .SCEPRunning}}Running{{else}}Not running{{end}}</div>
+                        <div class="card-subtext">
+                            {{if .SCEPRunning}}
+                                Listening at <a href="{{.SCEPURL}}">{{.SCEPURL}}</a>.
+                            {{else}}
+                                Start with <code>cert-helper scep serve -p {{.SCEPPort}}</code>.
+                            {{end}}
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Enrollment</div>
+                        <div class="card-value">Awaiting requests</div>
+                        <div class="card-subtext">No active certificate enrollments.</div>
+                    </div>
+                </div>
+                <div class="file-meta">When SCEP is running, status and enrollment activity will appear here.</div>
+            </div>
+        </section>
+        </div>
+    </div>
+    <script src="/assets/shared.js"></script>
+    <script>
+        window.dashboardDefaults = {
+            common: {
+                organization: "{{js .Defaults.Organization}}",
+                organizational_unit: "{{js .Defaults.OrganizationalUnit}}",
+                country: "{{js .Defaults.Country}}",
+                state: "{{js .Defaults.State}}",
+                locality: "{{js .Defaults.Locality}}"
+            },
+            root: {
+                name: "{{js .Defaults.RootName}}",
+                common_name: "{{js .Defaults.RootCommonName}}"
+            },
+            intermediate: {
+                name: "{{js .Defaults.IntermediateName}}",
+                common_name: "{{js .Defaults.IntermediateCommonName}}"
+            },
+            certificate: {
+                common_name: "{{js .Defaults.CertificateCommonName}}",
+                subject_alt_names: "{{js .Defaults.CertificateSANs}}"
+            }
+        };
+    </script>
+    <script src="/assets/dashboard.js"></script>
+    <script src="/assets/file_browser.js"></script>
+</body>
+</html>

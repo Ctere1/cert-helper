@@ -1,0 +1,49 @@
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    /* clip fallback for legacy browsers, clip-path for modern browsers */
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.action-link,
+.action-button {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #0f172a;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.action-link.primary {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.action-button:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+.action-link:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    text-decoration: underline;
+}
+
+.action-link.primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    text-decoration: underline;
+}

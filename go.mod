@@ -1,0 +1,29 @@
+module github.com/Ctere1/cert-helper
+
+go 1.26
+
+require (
+	github.com/adrg/xdg v0.5.3
+	github.com/go-kit/log v0.2.1
+	github.com/micromdm/scep/v2 v2.3.0
+	github.com/pkg/errors v0.9.1
+	github.com/spf13/cobra v1.10.2
+	golang.org/x/net v0.50.0
+	software.sslmate.com/src/go-pkcs12 v0.7.0
+)
+
+require (
+	github.com/go-kit/kit v0.4.0 // indirect
+	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/go-stack/stack v1.6.0 // indirect
+	github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f // indirect
+	github.com/gorilla/mux v1.4.0 // indirect
+	github.com/groob/finalizer v0.0.0-20170707115354-4c2ed49aabda // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/smallstep/pkcs7 v0.1.1 // indirect
+	github.com/smallstep/scep v0.0.0-20241223071629-a37a330173bc // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
+)
