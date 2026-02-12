@@ -1,6 +1,8 @@
 # cert-helper
 
-`cert-helper` is a lightweight certificate toolkit that helps teams generate root CAs, intermediate CAs, and end-entity certificates via both CLI and a web dashboard.
+`cert-helper` is a lightweight certificate toolkit for generating root CAs, intermediate CAs, and end-entity certificates via CLI and a web dashboard, with a built-in SCEP server. 
+
+![Dashboard](assets/overview.png)
 
 ## Why this project exists
 
