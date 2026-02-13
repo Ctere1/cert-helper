@@ -20,9 +20,10 @@ require (
 	github.com/gorilla/mux v1.4.0 // indirect
 	github.com/groob/finalizer v0.0.0-20170707115354-4c2ed49aabda // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/smallstep/pkcs7 v0.1.1 // indirect
-	github.com/smallstep/scep v0.0.0-20241223071629-a37a330173bc // indirect
-	github.com/spf13/pflag v1.0.9 // indirect
+	github.com/smallstep/pkcs7 v0.2.1 // indirect
+	github.com/smallstep/scep v0.0.0-20250318231241-a25cabb69492 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect

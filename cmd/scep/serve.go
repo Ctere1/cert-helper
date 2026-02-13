@@ -115,7 +115,7 @@ func (d *Depot) Put(name string, crt *x509.Certificate) error {
 
 func init() {
 	Cmd.AddCommand(serveCmd)
-	serveCmd.Flags().StringVarP(&serverPort, "port", "p", "8000", "Port to serve on")
+	serveCmd.Flags().StringVarP(&serverPort, "port", "p", "8001", "Port to serve on")
 	serveCmd.Flags().StringVarP(&serverHost, "host", "l", "localhost", "Host to serve on")
 	serveCmd.Flags().StringVar(&challenge, "challenge", "very-secure-challenge", "SCEP challenge")
 }
